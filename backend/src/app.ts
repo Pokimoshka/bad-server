@@ -25,6 +25,9 @@ const limiter = rateLimit({
     message: 'Слишком много запросов, попробуйте позже',
     standardHeaders: true,
     legacyHeaders: false,
+    // Не применяем rate limiting к маршрутам аутентификации,
+    // чтобы не блокировать регистрацию и вход во время подготовки тестов
+    skip: (req) => req.path.startsWith('/auth'),
 })
 
 if (RATE_LIMIT.enabled) {
