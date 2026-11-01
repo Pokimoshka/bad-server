@@ -5,7 +5,7 @@ import Order from '../models/order'
 import User, { IUser } from '../models/user'
 import escapeRegExp from '../utils/escapeRegExp'
 
-const MAX_LIMIT = 100
+const MAX_LIMIT = 10
 const DEFAULT_LIMIT = 10
 
 // Get GET /customers?page=2&limit=5&sort=totalAmount&order=desc&...

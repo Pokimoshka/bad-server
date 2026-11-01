@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto'
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 МБ
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 МБ
 
 const storage = multer.diskStorage({
     destination: (

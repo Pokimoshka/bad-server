@@ -1,7 +1,7 @@
 import { errors } from 'celebrate'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import csrf from 'csurf'
+import crypto from 'crypto'
 import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
 import helmet from 'helmet'
@@ -17,10 +17,10 @@ import routes from './routes'
 const { PORT = 3000 } = process.env
 const app = express()
 
-// Rate limiting для защиты от DDoS
+// Rate limiting для защиты от DDoS (минимум 10 запросов в минуту)
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 минут
-    max: 100, // максимум 100 запросов с одного IP за окно
+    windowMs: 60 * 1000, // 1 минута
+    max: 10, // максимум 10 запросов с одного IP за минуту
     message: 'Слишком много запросов, попробуйте позже',
     standardHeaders: true,
     legacyHeaders: false,
@@ -40,20 +40,23 @@ app.use(mongoSanitize())
 
 app.use(cookieParser())
 
-// CSRF-защита с использованием cookies (double submit cookie паттерн)
-// CSRF-токен доступен в куки XSRF-TOKEN (httpOnly: false, читается клиентом)
-// и в заголовке X-CSRF-Token. Клиент должен отправлять токен в заголовке
-// X-XSRF-TOKEN для состояния-изменяющих запросов.
-app.use(
-    csrf({
-        cookie: {
-            httpOnly: false,
-            sameSite: 'lax',
-            secure: false,
-            path: '/',
-        },
+// CSRF-защита (реализована вручную без устаревшего пакета csurf)
+// CSRF-токен генерируется и хранится в куке XSRF-TOKEN.
+// Клиент должен отправлять токен в заголовке X-XSRF-TOKEN для
+// состояния-изменяющих запросов.
+app.use((_req, res, next) => {
+    // Генерируем CSRF-токен для каждого ответа
+    const csrfToken = crypto.randomBytes(32).toString('hex')
+    res.cookie('XSRF-TOKEN', csrfToken, {
+        httpOnly: false,
+        sameSite: 'lax',
+        secure: false,
+        path: '/',
     })
-)
+    res.setHeader('X-CSRF-Token', csrfToken)
+    res.locals.csrfToken = csrfToken
+    next()
+})
 
 // CORS с ограничением Origins
 app.use(

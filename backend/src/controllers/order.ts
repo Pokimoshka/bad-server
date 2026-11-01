@@ -7,8 +7,8 @@ import Product, { IProduct } from '../models/product'
 import User from '../models/user'
 import escapeRegExp from '../utils/escapeRegExp'
 
-const MAX_LIMIT = 100
-const DEFAULT_LIMIT = 10
+const MAX_LIMIT = 10
+const DEFAULT_LIMIT = 5
 
 // GET /orders?page=2&limit=5&sort=totalAmount&order=desc&...
 export const getOrders = async (
@@ -36,10 +36,11 @@ export const getOrders = async (
         const filters: FilterQuery<Partial<IOrder>> = {}
 
         if (status) {
-            // Защита от NoSQL-инъекции: принимаем только строку, не объект
-            if (typeof status === 'string') {
-                filters.status = status
+            // Защита от NoSQL-инъекции: принимаем только строку
+            if (typeof status !== 'string') {
+                return next(new BadRequestError('Параметр status должен быть строкой'))
             }
+            filters.status = status
         }
 
         if (totalAmountFrom) {
@@ -299,6 +300,20 @@ export const createOrder = async (
         const { address, payment, phone, total, email, items, comment } =
             req.body
 
+        // Санитизация комментария: экранируем HTML для предотвращения XSS
+        const sanitizedComment = typeof comment === 'string'
+            ? comment.replace(/[&<>"']/g, (char) => {
+                const entities: Record<string, string> = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                }
+                return entities[char] || char
+            })
+            : comment
+
         items.forEach((id: Types.ObjectId) => {
             const product = products.find((p) => p._id.equals(id))
             if (!product) {
@@ -320,7 +335,7 @@ export const createOrder = async (
             payment,
             phone,
             email,
-            comment,
+            comment: sanitizedComment,
             customer: userId,
             deliveryAddress: address,
         })

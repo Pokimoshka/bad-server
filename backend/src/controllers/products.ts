@@ -13,7 +13,7 @@ const getProducts = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { page = '1', limit = '5' } = req.query
         const pageNum = Math.max(1, Number(page) || 1)
-        const limitNum = Math.min(100, Math.max(1, Number(limit) || 5))
+        const limitNum = Math.min(10, Math.max(1, Number(limit) || 5))
         const options = {
             skip: (pageNum - 1) * limitNum,
             limit: limitNum,
