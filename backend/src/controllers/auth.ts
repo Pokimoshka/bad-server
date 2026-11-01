@@ -186,6 +186,12 @@ const getCurrentUserRoles = async (
     }
 }
 
+// GET /auth/csrf-token - отдаёт CSRF-токен для клиента (double-submit cookie)
+const getCsrfToken = (req: Request, res: Response) => {
+    const token = req.csrfToken()
+    res.json({ csrfToken: token })
+}
+
 const updateCurrentUser = async (
     req: Request,
     res: Response,
@@ -216,6 +222,7 @@ const updateCurrentUser = async (
 }
 
 export {
+    getCsrfToken,
     getCurrentUser,
     getCurrentUserRoles,
     login,
