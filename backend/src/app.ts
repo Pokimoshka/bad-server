@@ -1,8 +1,12 @@
 import { errors } from 'celebrate'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import csrf from 'csurf'
 import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
+import helmet from 'helmet'
+import mongoSanitize from 'express-mongo-sanitize'
+import rateLimit from 'express-rate-limit'
 import mongoose from 'mongoose'
 import path from 'path'
 import { DB_ADDRESS } from './config'
@@ -13,18 +17,60 @@ import routes from './routes'
 const { PORT = 3000 } = process.env
 const app = express()
 
+// Rate limiting для защиты от DDoS
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 минут
+    max: 100, // максимум 100 запросов с одного IP за окно
+    message: 'Слишком много запросов, попробуйте позже',
+    standardHeaders: true,
+    legacyHeaders: false,
+})
+
+app.use(limiter)
+
+// Защитные заголовки HTTP
+app.use(
+    helmet({
+        crossOriginEmbedderPolicy: false,
+    })
+)
+
+// Санитизация запросов для защиты от NoSQL-инъекций
+app.use(mongoSanitize())
+
 app.use(cookieParser())
 
-app.use(cors())
-// app.use(cors({ origin: ORIGIN_ALLOW, credentials: true }));
-// app.use(express.static(path.join(__dirname, 'public')));
+// CSRF-защита с использованием cookies (double submit cookie паттерн)
+// CSRF-токен доступен в куки XSRF-TOKEN (httpOnly: false, читается клиентом)
+// и в заголовке X-CSRF-Token. Клиент должен отправлять токен в заголовке
+// X-XSRF-TOKEN для состояния-изменяющих запросов.
+app.use(
+    csrf({
+        cookie: {
+            httpOnly: false,
+            sameSite: 'lax',
+            secure: false,
+            path: '/',
+        },
+    })
+)
+
+// CORS с ограничением Origins
+app.use(
+    cors({
+        origin: process.env.ORIGIN_ALLOW || 'http://localhost:5173',
+        credentials: true,
+    })
+)
+
+app.options('*', cors())
 
 app.use(serveStatic(path.join(__dirname, 'public')))
 
-app.use(urlencoded({ extended: true }))
-app.use(json())
+// Ограничение размера тела запроса для защиты от переполнения буфера
+app.use(urlencoded({ extended: true, limit: '10kb' }))
+app.use(json({ limit: '10kb' }))
 
-app.options('*', cors())
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)

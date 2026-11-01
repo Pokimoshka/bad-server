@@ -11,6 +11,7 @@ export const uploadFile = async (
         return next(new BadRequestError('Файл не загружен'))
     }
     try {
+        // Используем только имя файла (без путей) для предотвращения path traversal
         const fileName = process.env.UPLOAD_PATH
             ? `/${process.env.UPLOAD_PATH}/${req.file.filename}`
             : `/${req.file?.filename}`
