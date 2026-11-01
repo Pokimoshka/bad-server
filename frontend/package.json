@@ -1,13 +1,12 @@
 {
   "name": "weblarek_frontend",
-  "private": true,
   "version": "1.0.0",
   "description": "< Добавьте описание проекта в свободной форме >",
   "author": "< Укажите здесь автора работы >",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc -b && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --fix",
     "preview": "vite preview",
     "format": "prettier ./src --write"
@@ -25,7 +24,7 @@
     "react-simple-wysiwyg": "^3.0.3",
     "react-toastify": "^10.0.5",
     "redux-persist": "^6.0.0",
-    "vite-plugin-svgr": "^4.2.0"
+    "vite-plugin-svgr": "^4.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
@@ -41,12 +40,13 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
     "prettier": "^3.3.3",
-    "sass": "^1.77.2",
+    "sass": "1.77.2",
     "typescript": "^5.2.2",
-    "vite": "^8.3.5",
+    "vite": "^7.0.0",
     "vite-tsconfig-paths": "^4.3.2"
   },
   "overrides": {
-    "minimatch": "^11.0.1"
+    "minimatch": "^11.0.1",
+    "esbuild": "^0.25.0"
   }
 }
