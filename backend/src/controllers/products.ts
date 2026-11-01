@@ -11,21 +11,23 @@ import movingFile from '../utils/movingFile'
 // GET /product
 const getProducts = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { page = 1, limit = 5 } = req.query
+        const { page = '1', limit = '5' } = req.query
+        const pageNum = Math.max(1, Number(page) || 1)
+        const limitNum = Math.min(10, Math.max(1, Number(limit) || 5))
         const options = {
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
+            skip: (pageNum - 1) * limitNum,
+            limit: limitNum,
         }
         const products = await Product.find({}, null, options)
         const totalProducts = await Product.countDocuments({})
-        const totalPages = Math.ceil(totalProducts / Number(limit))
+        const totalPages = Math.ceil(totalProducts / limitNum)
         return res.send({
             items: products,
             pagination: {
                 totalProducts,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: pageNum,
+                pageSize: limitNum,
             },
         })
     } catch (err) {
@@ -42,10 +44,11 @@ const createProduct = async (
     try {
         const { description, category, price, title, image } = req.body
 
-        // Переносим картинку из временной папки
-        if (image) {
+        // Переносим картинку из временной папки с проверкой имени файла
+        if (image && image.fileName) {
+            const safeFileName = image.fileName.replace(/\.\./g, '')
             movingFile(
-                image.fileName,
+                safeFileName,
                 join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
                 join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
             )
@@ -83,10 +86,11 @@ const updateProduct = async (
         const { productId } = req.params
         const { image } = req.body
 
-        // Переносим картинку из временной папки
-        if (image) {
+        // Переносим картинку из временной папки с проверкой имени файла
+        if (image && image.fileName) {
+            const safeFileName = image.fileName.replace(/\.\./g, '')
             movingFile(
-                image.fileName,
+                safeFileName,
                 join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
                 join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
             )

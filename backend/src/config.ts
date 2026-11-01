@@ -22,3 +22,11 @@ export const REFRESH_TOKEN = {
         } as CookieOptions,
     },
 }
+
+// Конфигурация rate limiting из переменных окружения
+export const RATE_LIMIT = {
+    enabled: process.env.RATE_LIMITED !== 'false',
+    points: Number(process.env.RATE_LIMIT_POINTS) || 3,
+    duration: Number(process.env.RATE_LIMIT_DURATION) || 5,
+    block: Number(process.env.RATE_LIMIT_BLOCK) || 15,
+}

@@ -15,28 +15,22 @@
       "node": {
         "extensions": [".ts", ".js", ".json"]
       }
-    },
-    "import/extensions": [".js", ".ts"]
+    }
   },
   "rules": {
     "no-shadow": "off",
     "import/prefer-default-export": "off",
+    "import/no-extraneous-dependencies": "off",
+    "import/extensions": "off",
+    "import/no-unresolved": "off",
     "no-console": "off",
     "consistent-return": "off",
     "func-names": "off",
     "@typescript-eslint/no-shadow": "warn",
-    "import/extensions": [
-      "error",
-      "ignorePackages",
-      {
-        "js": "never",
-        "ts": "never"
-      }
-    ],
     "no-underscore-dangle": [
       "error",
       {
-        "allow": ["_id"]
+        "allow": ["_id", "_csrf"]
       }
     ],
     "no-unused-vars": "off",

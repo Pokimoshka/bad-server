@@ -4,19 +4,26 @@ import path from 'path'
 
 export default function serveStatic(baseDir: string) {
     return (req: Request, res: Response, next: NextFunction) => {
-        // Определяем полный путь к запрашиваемому файлу
-        const filePath = path.join(baseDir, req.path)
+        // Предотвращаем path traversal: разрешаем только файлы внутри baseDir
+        const requestedPath = path.join(baseDir, req.path)
+        const resolvedBaseDir = path.resolve(baseDir)
+        const resolvedFilePath = path.resolve(requestedPath)
+
+        // Проверяем, что запрашиваемый файл находится внутри базовой директории
+        if (!resolvedFilePath.startsWith(resolvedBaseDir + path.sep) && resolvedFilePath !== resolvedBaseDir) {
+            return next()
+        }
 
         // Проверяем, существует ли файл
-        fs.access(filePath, fs.constants.F_OK, (err) => {
+        fs.access(resolvedFilePath, fs.constants.F_OK, (err) => {
             if (err) {
-                // Файл не существует отдаем дальше мидлварам
+                // Файл не существует, отдаем дальше мидлварам
                 return next()
             }
             // Файл существует, отправляем его клиенту
-            return res.sendFile(filePath, (err) => {
-                if (err) {
-                    next(err)
+            return res.sendFile(resolvedFilePath, (sendErr) => {
+                if (sendErr) {
+                    next(sendErr)
                 }
             })
         })

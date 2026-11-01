@@ -10,6 +10,9 @@ import NotFoundError from '../errors/not-found-error'
 import UnauthorizedError from '../errors/unauthorized-error'
 import User from '../models/user'
 
+// Поля, которые разрешено обновлять через updateCurrentUser
+const ALLOWED_UPDATE_FIELDS = ['name', 'email', 'phone']
+
 // POST /auth/login
 const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -165,15 +168,13 @@ const refreshAccessToken = async (
 }
 
 const getCurrentUserRoles = async (
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
 ) => {
     const userId = res.locals.user._id
     try {
-        await User.findById(userId, req.body, {
-            new: true,
-        }).orFail(
+        await User.findById(userId).orFail(
             () =>
                 new NotFoundError(
                     'Пользователь по заданному id отсутствует в базе'
@@ -185,6 +186,11 @@ const getCurrentUserRoles = async (
     }
 }
 
+// GET /auth/csrf-token - отдаёт CSRF-токен для клиента (double-submit cookie)
+const getCsrfToken = (_req: Request, res: Response) => {
+    res.json({ csrfToken: res.locals.csrfToken || '' })
+}
+
 const updateCurrentUser = async (
     req: Request,
     res: Response,
@@ -192,7 +198,15 @@ const updateCurrentUser = async (
 ) => {
     const userId = res.locals.user._id
     try {
-        const updatedUser = await User.findByIdAndUpdate(userId, req.body, {
+        // Разрешаем обновлять только безопасные поля, предотвращая NoSQL-инъекции
+        const updates: Record<string, unknown> = {}
+        ALLOWED_UPDATE_FIELDS.forEach((field) => {
+            if (req.body[field] !== undefined) {
+                updates[field] = req.body[field]
+            }
+        })
+
+        const updatedUser = await User.findByIdAndUpdate(userId, updates, {
             new: true,
         }).orFail(
             () =>
@@ -207,6 +221,7 @@ const updateCurrentUser = async (
 }
 
 export {
+    getCsrfToken,
     getCurrentUser,
     getCurrentUserRoles,
     login,

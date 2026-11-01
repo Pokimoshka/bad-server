@@ -1,8 +1,8 @@
 import { Joi, celebrate } from 'celebrate'
 import { Types } from 'mongoose'
 
-// eslint-disable-next-line no-useless-escape
-export const phoneRegExp = /^(\+\d+)?(?:\s|-?|\(?\d+\)?)+$/
+// Исправленное регулярное выражение для телефона без вложенных квантификаторов (ReDoS-safe)
+export const phoneRegExp = /^\+?\d{1,4}?[\s-()]?\d{1,14}$/
 
 export enum PaymentType {
     Card = 'card',
@@ -21,8 +21,10 @@ export const validateOrderBody = celebrate({
                     return helpers.message({ custom: 'Невалидный id' })
                 })
             )
+            .max(100)
             .messages({
                 'array.empty': 'Не указаны товары',
+                'array.max': 'Слишком много товаров в заказе',
             }),
         payment: Joi.string()
             .valid(...Object.values(PaymentType))
@@ -38,18 +40,20 @@ export const validateOrderBody = celebrate({
         phone: Joi.string().required().pattern(phoneRegExp).messages({
             'string.empty': 'Не указан телефон',
         }),
-        address: Joi.string().required().messages({
+        address: Joi.string().required().max(500).messages({
             'string.empty': 'Не указан адрес',
+            'string.max': 'Адрес слишком длинный',
         }),
-        total: Joi.number().required().messages({
+        total: Joi.number().required().positive().max(1000000).messages({
             'string.empty': 'Не указана сумма заказа',
+            'number.positive': 'Сумма заказа должна быть положительной',
+            'number.max': 'Сумма заказа слишком большая',
         }),
-        comment: Joi.string().optional().allow(''),
+        comment: Joi.string().optional().allow('').max(1000),
     }),
 })
 
 // валидация товара.
-// name и link - обязательные поля, name - от 2 до 30 символов, link - валидный url
 export const validateProductBody = celebrate({
     body: Joi.object().keys({
         title: Joi.string().required().min(2).max(30).messages({
@@ -58,16 +62,16 @@ export const validateProductBody = celebrate({
             'string.empty': 'Поле "title" должно быть заполнено',
         }),
         image: Joi.object().keys({
-            fileName: Joi.string().required(),
-            originalName: Joi.string().required(),
+            fileName: Joi.string().required().max(255),
+            originalName: Joi.string().required().max(255),
         }),
-        category: Joi.string().required().messages({
+        category: Joi.string().required().max(50).messages({
             'string.empty': 'Поле "category" должно быть заполнено',
         }),
-        description: Joi.string().required().messages({
+        description: Joi.string().required().max(1000).messages({
             'string.empty': 'Поле "description" должно быть заполнено',
         }),
-        price: Joi.number().allow(null),
+        price: Joi.number().allow(null).min(0).max(1000000),
     }),
 })
 
@@ -78,12 +82,12 @@ export const validateProductUpdateBody = celebrate({
             'string.max': 'Максимальная длина поля "name" - 30',
         }),
         image: Joi.object().keys({
-            fileName: Joi.string().required(),
-            originalName: Joi.string().required(),
+            fileName: Joi.string().max(255),
+            originalName: Joi.string().max(255),
         }),
-        category: Joi.string(),
-        description: Joi.string(),
-        price: Joi.number().allow(null),
+        category: Joi.string().max(50),
+        description: Joi.string().max(1000),
+        price: Joi.number().allow(null).min(0).max(1000000),
     }),
 })
 
@@ -106,8 +110,9 @@ export const validateUserBody = celebrate({
             'string.min': 'Минимальная длина поля "name" - 2',
             'string.max': 'Максимальная длина поля "name" - 30',
         }),
-        password: Joi.string().min(6).required().messages({
+        password: Joi.string().min(6).max(128).required().messages({
             'string.empty': 'Поле "password" должно быть заполнено',
+            'string.max': 'Пароль слишком длинный',
         }),
         email: Joi.string()
             .required()
